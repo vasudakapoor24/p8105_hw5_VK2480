@@ -3,8 +3,8 @@ title: "Homework-2"
 output: github_document
 ---
 
-```{r setup, include = FALSE, warning=FALSE}
-knitr::opts_chunk$set(echo=TRUE)
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
@@ -208,5 +208,57 @@ power_plot = power_plot_df %>%
 power_plot 
 ```
 Thus, we can see that power increases with increase in effect size. 
+```{r}
+# Make a plot showing the average estimate of μ̂  on the y axis and the true value of μ on the x axis.
+plot2_df1 = sim_results_df %>%
+  group_by(mu) %>%
+  summarise(
+    avg_mu = mean(mu_hat)
+  ) %>%
+  mutate(
+    data = "Null hypothesis was not rejected"
+  )
+
+mu_vs_muhat = plot2_df1 %>%
+  ggplot(aes(x = mu, y = avg_mu)) +
+  geom_point() +
+  scale_x_continuous(breaks = seq(0, 6)) +
+  scale_y_continuous(breaks = seq(0, 6, by = 0.5)) +
+  xlab("True Population Mean") +
+  ylab("Average Estimate Mean")
+
+mu_vs_muhat
+```
 
 
+```{r}
+# Make a second plot (or overlay on the first) the average estimate of μ̂  only in samples for which the null was rejected on the y axis and the true value of μ on the x axis. 
+
+plot2_df2 = sim_results_df %>%
+  mutate(
+    conclusion = if_else(p_value > 0.05, "Do not reject", "Reject")) %>%
+  filter(conclusion == "Reject") %>%
+  group_by(mu) %>%
+  summarise(
+    avg_mu = mean(mu_hat)
+  ) %>%
+  mutate(
+    data = "Null hypothesis was rejected"
+  )
+
+plot2 = ggplot(data = plot2_df1, aes(x = mu, y = avg_mu, color = data)) + 
+  geom_point() + 
+  geom_point(data = plot2_df2, shape = 23) +
+  scale_x_continuous(breaks = seq(0, 6)) +
+  scale_y_continuous(breaks = seq(0, 6, by = 0.5)) +
+  xlab("True Population Mean") +
+  ylab("Average Estimate Mean")
+
+plot2
+
+```
+
+```{r}
+#  Is the sample average of μ̂  across tests for which the null is rejected approximately equal to the true value of μ? Why or why not?
+```
+The sample average of μ̂ across tests for which the null is rejected is not equal to the true value of μ when μ is low, but it gets closer and almost equal to μ as the value of μ increases. WHY???
