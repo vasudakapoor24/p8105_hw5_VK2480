@@ -1,5 +1,5 @@
 ---
-title: "Homework-2"
+title: "Homework-5"
 output: github_document
 ---
 
@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Library calls
 ```{r}
 library(tidyverse)
-library(readxl)
 ```
 
 ## Problem 1
@@ -72,7 +71,8 @@ experiment_plot
 homicide_df = read_csv("homicide-data.csv") %>%
   janitor::clean_names()
 ```
-Describe raw data:
+Describe raw data: 
+This dataset contains `r nrow(homicide_df)` rows and `r ncol(homicide_df)` variables. It provides information about homicides in 50 US cities. Some of the important variables in this dataset include: date of homicide, city, state, and the state/disposition of the homicide case. 
 
 ```{r}
 # create city_state variable
@@ -95,11 +95,19 @@ unsolved_homicides_df = homicide_df %>%
 homicide_df = left_join(total_homicides_df, unsolved_homicides_df)
 
 # Prop.test for Baltimore
-baltimore_homicides = homicide_df %>%
-  filter(city == "Baltimore")
 
-balt_prop_test = prop.test(x = baltimore_homicides$unsolved_homicides, n = baltimore_homicides$total_homicides) %>%
-  broom::tidy() %>%
+# create function to return tidy version of prop.test results
+prop_test_results <- function(prop_x, prop_n) {
+  
+  prop_test_list = prop.test(prop_x, prop_n)
+  prop_test_list = broom::tidy(prop_test_list)
+}
+
+balt_prop_test = homicide_df %>%
+  filter(city == "Baltimore") %>%
+  mutate(
+    t_test = prop_test_results(prop_x = unsolved_homicides, prop_n = total_homicides)) %>%
+  unnest(cols = t_test) %>%
   select(estimate, conf.low, conf.high) %>%
   mutate(
     CI = str_c(conf.low, ",", conf.high)
@@ -153,31 +161,30 @@ sim_mean_pvalue = function(mu = 0, sigma = 5, samp_num = 30) {
   sim_data %>% 
     summarize(
       mu_hat = mean(x),
-      p_value = broom::tidy(t.test(x))[[3]],
+      p_value = broom::tidy(t.test(x))[[3]]
     )
 }
 
-a_sampl = rnorm(30, 2, 0.5)
-t.test(a_sampl)
 
 ## step 2: Generate 5000 simulation datasets with mu=0, using the above function
 
 sim0_results_df = 
   expand_grid(
     mu = 0,
-    iter = 1:50
+    iter = 1:5000
   ) %>% 
   mutate(
     estimate_df = map(mu, sim_mean_pvalue)
   ) %>% 
   unnest(estimate_df)
 ```
+
 ```{r}
 # Repeat the above for μ={1,2,3,4,5,6}
 sim_results_df = 
   expand_grid(
     mu = c(1, 2, 3, 4, 5, 6),
-    iter = 1:50
+    iter = 1:5000
   ) %>% 
   mutate(
     estimate_df = map(mu, sim_mean_pvalue)
@@ -207,7 +214,8 @@ power_plot = power_plot_df %>%
   ggtitle("Association between true population means and power of t test")
 power_plot 
 ```
-Thus, we can see that power increases with increase in effect size. 
+Thus, we can see that power increases with increase in effect size.
+
 ```{r}
 # Make a plot showing the average estimate of μ̂  on the y axis and the true value of μ on the x axis.
 plot2_df1 = sim_results_df %>%
@@ -261,4 +269,4 @@ plot2
 ```{r}
 #  Is the sample average of μ̂  across tests for which the null is rejected approximately equal to the true value of μ? Why or why not?
 ```
-The sample average of μ̂ across tests for which the null is rejected is not equal to the true value of μ when μ is low, but it gets closer and almost equal to μ as the value of μ increases. WHY???
+The sample average of μ̂ across tests for which the null is rejected is not equal to the true value of μ when μ is low, but it gets closer and almost equal to μ as the value of μ increases. 
